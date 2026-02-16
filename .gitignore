@@ -1,9 +1,17 @@
 # Datasets (too large for git)
 data/
 dataset/
+dataset2/
 
 # TensorBoard logs
 logs/
+dataloader/
+p10/
+runs/
+events.out.tfevents.*
+
+# Local agent/tool config
+.claude/
 
 # IDE
 .idea/
