@@ -5,7 +5,7 @@
 这是一个从零开始的 PyTorch 学习仓库，当前主要覆盖三条线：
 - Autograd 核心原理（`00` 到 `08`）
 - Dataset / DataLoader / TensorBoard 数据流实践
-- `nn.Module` 与卷积（`Conv2d`）入门示例
+- `nn.Module`、激活函数、池化与卷积入门示例
 
 ## 目录结构
 
@@ -35,13 +35,21 @@
 | `dataset_transform.py` | CIFAR-10 下载 + transforms 组合 + TensorBoard 预览 |
 | `dataloader.py` | 使用 `DataLoader` 按批加载 CIFAR-10 并记录多轮图像 |
 
-### 3）nn.Module 与卷积练习
+### 3）nn.Module、激活函数、池化与卷积练习
 
 | 文件 | 说明 |
 |------|------|
 | `nn_module.py` | 最小自定义 `nn.Module`（`forward` 逻辑示例） |
+| `nn_relu.py` | `ReLU` / `Sigmoid` 激活函数演示，并对 CIFAR-10 批数据做可视化 |
+| `nn_maxpool.py` | `MaxPool2d` 下采样演示（`ceil_mode=True`）并写入 TensorBoard |
 | `nn_conv.py` | `F.conv2d` 的 stride / padding 对比实验 |
 | `nn_conv2d.py` | `nn.Conv2d` 处理 CIFAR-10，并在 TensorBoard 可视化输入输出 |
+
+### 4）控制台速查脚本
+
+| 文件 | 说明 |
+|------|------|
+| `Console.py` | 快速检查 CUDA 可用性与 `torch` API 的交互式小脚本 |
 
 ## 数据集与本地目录
 
@@ -67,4 +75,4 @@ pip install torch torchvision tensorboard
 1. 先按 `00` -> `08` 学完 Autograd 主线。
 2. 再看 transforms / dataset 相关脚本（`test_Tf.py`、`Useful_TF.py`、`read_data.py`、`dataset_transform.py`）。
 3. 接着学习批处理和可视化（`dataloader.py`、`test_tb.py`）。
-4. 最后看模型模块与卷积（`nn_module.py`、`nn_conv.py`、`nn_conv2d.py`）。
+4. 最后看模型组件部分（`nn_module.py`、`nn_relu.py`、`nn_maxpool.py`、`nn_conv.py`、`nn_conv2d.py`）。

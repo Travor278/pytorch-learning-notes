@@ -5,7 +5,7 @@
 From-scratch PyTorch study notes focused on three tracks:
 - Autograd fundamentals (`00` to `08`)
 - Dataset / DataLoader / TensorBoard practice
-- `nn.Module` and convolution demos (`Conv2d`)
+- `nn.Module`, activation, pooling, and convolution demos
 
 ## Project Structure
 
@@ -35,13 +35,21 @@ From-scratch PyTorch study notes focused on three tracks:
 | `dataset_transform.py` | CIFAR-10 download + transform pipeline + TensorBoard preview |
 | `dataloader.py` | Load CIFAR-10 with `DataLoader` and log batches by epoch |
 
-### 3) nn.Module & Convolution Practice
+### 3) nn.Module, Activation, Pooling & Convolution
 
 | File | Description |
 |------|-------------|
 | `nn_module.py` | Minimal custom `nn.Module` (`forward` demo) |
+| `nn_relu.py` | `ReLU` / `Sigmoid` activation demo on CIFAR-10 batches with TensorBoard |
+| `nn_maxpool.py` | `MaxPool2d` feature downsampling demo (`ceil_mode=True`) with TensorBoard |
 | `nn_conv.py` | `torch.nn.functional.conv2d` with stride/padding comparison |
 | `nn_conv2d.py` | `nn.Conv2d` on CIFAR-10 + input/output visualization in TensorBoard |
+
+### 4) Quick Console Check
+
+| File | Description |
+|------|-------------|
+| `Console.py` | Simple CUDA availability and `torch` API quick inspection snippets |
 
 ## Datasets and Local Paths
 
@@ -67,4 +75,4 @@ pip install torch torchvision tensorboard
 1. Start with `00` -> `08` (Autograd core).
 2. Move to transforms/dataset scripts (`test_Tf.py`, `Useful_TF.py`, `read_data.py`, `dataset_transform.py`).
 3. Continue with batching and visualization (`dataloader.py`, `test_tb.py`).
-4. Finish with model building basics (`nn_module.py`, `nn_conv.py`, `nn_conv2d.py`).
+4. Finish with model components (`nn_module.py`, `nn_relu.py`, `nn_maxpool.py`, `nn_conv.py`, `nn_conv2d.py`).
