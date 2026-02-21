@@ -35,7 +35,7 @@ From-scratch PyTorch study notes focused on three tracks:
 | `dataset_transform.py` | CIFAR-10 download + transform pipeline + TensorBoard preview |
 | `dataloader.py` | Load CIFAR-10 with `DataLoader` and log batches by epoch |
 
-### 3) nn.Module, Activation, Pooling & Convolution
+### 3) nn.Module — Layers, Loss & Building Networks
 
 | File | Description |
 |------|-------------|
@@ -44,6 +44,11 @@ From-scratch PyTorch study notes focused on three tracks:
 | `nn_maxpool.py` | `MaxPool2d` feature downsampling demo (`ceil_mode=True`) with TensorBoard |
 | `nn_conv.py` | `torch.nn.functional.conv2d` with stride/padding comparison |
 | `nn_conv2d.py` | `nn.Conv2d` on CIFAR-10 + input/output visualization in TensorBoard |
+| `nn_linear.py` | `nn.Linear` basics: flatten CIFAR-10 images and pass through a fully-connected layer |
+| `nn_seq.py` | Build a Conv→Pool→Flatten→Linear network with `nn.Sequential`; visualize compute graph in TensorBoard |
+| `nn_loss.py` | Common loss functions: `L1Loss`, `MSELoss`, `CrossEntropyLoss` |
+| `nn_loss_network.py` | Full CNN (Conv2d + MaxPool2d + Flatten + Linear) + loss computation + `backward()` |
+| `nn_common_layers.py` | Overview of other common layers: `BatchNorm2d`, `Dropout`, `AvgPool2d`, `AdaptiveAvgPool2d`, `Flatten`, `Embedding` |
 
 ### 4) Quick Console Check
 
@@ -75,4 +80,4 @@ pip install torch torchvision tensorboard
 1. Start with `00` -> `08` (Autograd core).
 2. Move to transforms/dataset scripts (`test_Tf.py`, `Useful_TF.py`, `read_data.py`, `dataset_transform.py`).
 3. Continue with batching and visualization (`dataloader.py`, `test_tb.py`).
-4. Finish with model components (`nn_module.py`, `nn_relu.py`, `nn_maxpool.py`, `nn_conv.py`, `nn_conv2d.py`).
+4. Finish with model components in order: activations & pooling (`nn_relu.py`, `nn_maxpool.py`) → convolution (`nn_conv.py`, `nn_conv2d.py`) → linear (`nn_linear.py`) → Sequential networks (`nn_seq.py`) → loss functions (`nn_loss.py`, `nn_loss_network.py`) → other common layers (`nn_common_layers.py`).

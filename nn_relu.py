@@ -42,3 +42,5 @@ for data in dataloader:
     step += 1
 
 writer.close()
+# tensorboard --logdir=logs_maxpool --samples_per_plugin images=9999
+# 在浏览器中打开 http://localhost:6006/ 查看结果
