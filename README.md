@@ -48,6 +48,7 @@ From-scratch PyTorch study notes focused on three tracks:
 | `nn_seq.py` | Build a Conv→Pool→Flatten→Linear network with `nn.Sequential`; visualize compute graph in TensorBoard |
 | `nn_loss.py` | Common loss functions: `L1Loss`, `MSELoss`, `CrossEntropyLoss` |
 | `nn_loss_network.py` | Full CNN (Conv2d + MaxPool2d + Flatten + Linear) + loss computation + `backward()` |
+| `nn_optim.py` | Add `torch.optim.SGD` to the full network: `zero_grad` → `backward` → `step` complete training loop over 20 epochs |
 | `nn_common_layers.py` | Overview of other common layers: `BatchNorm2d`, `Dropout`, `AvgPool2d`, `AdaptiveAvgPool2d`, `Flatten`, `Embedding` |
 
 ### 4) Quick Console Check
