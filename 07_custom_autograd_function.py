@@ -1,180 +1,187 @@
 # 07_custom_autograd_function.py
-# 用途：自定义 autograd Function —— 自己写前向和反向传播
+# 自定义 Autograd Function：手写 forward 与 backward
 #
-# 什么时候需要自定义？
-# 1. PyTorch 没有实现的数学运算（比如某些论文提出的奇怪激活函数）
-# 2. 你想用 C/C++ 实现高效的 forward，但 autograd 推不出 backward
-# 3. 想在反向传播中做一些特殊操作（比如 Straight-Through Estimator）
+# 使用场景：
+#   ① PyTorch 未实现的运算（非标准激活函数、特殊层）；
+#   ② 需要用 C++/CUDA 实现高效 forward，但 autograd 无法自动推导 backward；
+#   ③ 需要在反向传播中注入特殊逻辑（量化训练的 STE、对抗训练的梯度反转）；
+#   ④ 出于效率将多个运算融合（fused kernel），绕过逐算子的中间 tensor。
 #
-# 这是进阶内容，但理解它能让你真正明白 PyTorch autograd 在底层做了什么。
+# 实现约定（继承 torch.autograd.Function）：
+#   - forward / backward 均为 @staticmethod
+#   - ctx（Context）对象用于在 forward 与 backward 间传递状态：
+#       ctx.save_for_backward(*tensors)  —— 存 tensor（必须用此接口，否则内存管理异常）
+#       ctx.arbitrary_attr = value       —— 存非 tensor 的标量/超参数等
+#   - backward 的返回值数量必须与 forward 的输入参数数量严格一致；
+#     不需要梯度的输入对应返回 None。
 
 import torch
-from torch.autograd import Function
+from torch.autograd import Function, gradcheck
 
-# ========== 例1：自己实现 ReLU ==========
-# 先拿最简单的 ReLU 练手，你知道 ReLU(x) = max(0, x)
-# forward: y = x if x > 0 else 0
-# backward: dy/dx = 1 if x > 0 else 0
+# ========== 例 1：自定义 ReLU ==========
+# ReLU(x) = max(0, x)
+# 前向：y = x · 1(x > 0)
+# 反向：∂L/∂x = ∂L/∂y · 1(x > 0)   ← 局部梯度为指示函数
+# 在 x=0 处，梯度严格来说不存在（左导 0，右导 1），
+# PyTorch 官方约定 ReLU'(0) = 0（次梯度选择），此处保持一致。
 
 class MyReLU(Function):
     @staticmethod
     def forward(ctx, input):
-        """
-        ctx 是一个上下文对象，用来在 forward 和 backward 之间传递信息。
-        你可以把 forward 中需要用到的东西存进去，backward 再取出来。
-        """
-        # 存住 input，backward 要用它判断哪些位置 > 0
-        ctx.save_for_backward(input)
-        # forward 逻辑就是把负数变成 0
+        ctx.save_for_backward(input)   # 保存原始输入，供 backward 生成掩码
         return input.clamp(min=0)
-    
+
     @staticmethod
     def backward(ctx, grad_output):
         """
-        grad_output 是从后面传过来的梯度（链式法则的上一环）。
-        我们要算的是：grad_input = grad_output * (local gradient)
+        grad_output：从后续节点传来的梯度 ∂L/∂y（链式法则上游部分）
+        局部梯度（Jacobian 对角元）：dy/dx = 1 if x > 0 else 0
+        返回：grad_input = grad_output ⊙ mask（逐元素乘，非矩阵乘）
         """
-        # 取出 forward 存的 input
         input, = ctx.saved_tensors
-        # ReLU 的局部梯度：x > 0 时为 1，否则为 0
         grad_input = grad_output.clone()
-        grad_input[input < 0] = 0
+        grad_input[input < 0] = 0       # x=0 处取次梯度 0
         return grad_input
 
-# 测一下
 print("=== 自定义 ReLU ===")
-
 x = torch.tensor([-2.0, -1.0, 0.0, 1.0, 2.0], requires_grad=True)
 
-# 用我们自己的 ReLU
-my_relu = MyReLU.apply  # .apply 是调用自定义 Function 的方式
-y = my_relu(x)
-loss = y.sum()
-loss.backward()
+y_custom = MyReLU.apply(x)     # 必须用 .apply()，不能直接实例化调用
+y_custom.sum().backward()
+print(f"输入:            {x.data}")
+print(f"MyReLU 输出:     {y_custom.data}")
+print(f"MyReLU 梯度:     {x.grad}  （期望 [0,0,0,1,1]）")
 
-print(f"输入: {x.data}")
-print(f"MyReLU 输出: {y.data}")
-print(f"梯度: {x.grad}")
-# 梯度应该是 [0, 0, 0, 1, 1]（负数位置梯度为0）
-
-# 对比 PyTorch 自带的
+# 与官方 ReLU 对比
 x2 = torch.tensor([-2.0, -1.0, 0.0, 1.0, 2.0], requires_grad=True)
-y2 = torch.relu(x2)
-y2.sum().backward()
-print(f"官方 ReLU 梯度: {x2.grad}")
-
+torch.relu(x2).sum().backward()
+print(f"官方 ReLU 梯度:  {x2.grad}")
 print()
 
-# ========== 例2：Straight-Through Estimator (STE) ==========
-# 这是量化（Quantization）训练中的核心技巧。
+# ========== 例 2：Straight-Through Estimator（STE）==========
 #
-# 问题：二值化（binarize）操作不可导（阶跃函数梯度为0）
-# 解决：forward 做二值化，backward 直接传梯度（假装没有二值化）
-# 这就是 STE（Straight-Through Estimator）
+# 问题：二值化（sign 函数）在几乎所有点梯度为 0（阶跃函数），
+#       若直接反传，梯度归零，网络无法学习。
+#
+# STE（Straight-Through Estimator）的思路（Bengio et al., 2013）：
+#   前向：使用真实的不可微运算（sign、round、argmax 等）；
+#   反向：用恒等映射（或其他平滑近似）代替真实导数，直通梯度。
+#
+# 理论支撑：将量化算子视为"带可控噪声的随机化操作"，
+# STE 是该随机化模型的无偏估计量在高温极限下的退化形式。
+# 参考：Bengio et al., "Estimating or Propagating Gradients Through
+#       Stochastic Neurons for Conditional Computation", arXiv 2013.
+# 应用：BinaryConnect, XNOR-Net, DoReFa-Net 等量化神经网络均以 STE 为基础。
 
-class Binarize(Function):
+class BinarizeSTE(Function):
     @staticmethod
     def forward(ctx, input):
-        # 前向：大于0输出+1，否则-1
+        # 前向：真实量化操作
         return input.sign()
-    
+
     @staticmethod
     def backward(ctx, grad_output):
-        # 反向：直接把梯度原样传回去（straight-through）
-        # 理论上 sign() 的梯度是 0（几乎处处为0），
-        # 但如果真传0回去，网络就学不动了
-        return grad_output  # 骗 autograd：假装 forward 是恒等函数
+        # 反向：STE —— 梯度直通，视 sign 为恒等映射
+        # 更保守的变体：只在 |x| ≤ 1 时直通（Hinton 2012 讲义中的版本），
+        # 即 return grad_output * (input.abs() <= 1).float()
+        # 此处使用最基础版本（无截断）
+        return grad_output
 
-print("=== Straight-Through Estimator ===")
-
+print("=== Straight-Through Estimator（量化训练）===")
 x = torch.tensor([-0.5, 0.3, -0.8, 0.1, 0.9], requires_grad=True)
-binarize = Binarize.apply
+y = BinarizeSTE.apply(x)
+print(f"输入:           {x.data}")
+print(f"二值化输出:     {y.data}   （前向：sign 操作）")
 
-y = binarize(x)
-print(f"输入: {x.data}")
-print(f"二值化输出: {y.data}")  # [-1, 1, -1, 1, 1]
-
-# 假设后面有个 loss
 loss = (y * torch.tensor([1.0, -1.0, 1.0, -1.0, 1.0])).sum()
 loss.backward()
-
-print(f"梯度（直通估计）: {x.grad}")
-# 梯度不是0！因为 STE 绕过了 sign 的零梯度
-
+print(f"梯度（STE）:    {x.grad}   （反向：直通，非零）")
 print()
 
-# ========== 例3：带两个输入的自定义 Function ==========
-# 自定义一个 z = x² * y + y³ 的运算
+# ========== 例 3：多输入自定义 Function + gradcheck 验证 ==========
+#
+# z = x²y + y³
+# ∂z/∂x = 2xy
+# ∂z/∂y = x² + 3y²
+#
+# gradcheck 的验证流程：
+#   对每个输入的每个元素，用中心差商计算数值梯度，与 autograd 梯度比较。
+#   相对误差阈值默认 1e-5。必须使用 float64，因为 float32 的数值精度
+#   与 eps≈1e-6 的差商不匹配，会导致误判。
 
 class MyOp(Function):
     @staticmethod
     def forward(ctx, x, y):
         ctx.save_for_backward(x, y)
         return x ** 2 * y + y ** 3
-    
+
     @staticmethod
     def backward(ctx, grad_output):
         x, y = ctx.saved_tensors
-        # ∂z/∂x = 2xy
+        # 链式法则：grad_input = grad_output · (∂z/∂input)
         grad_x = grad_output * (2 * x * y)
-        # ∂z/∂y = x² + 3y²
         grad_y = grad_output * (x ** 2 + 3 * y ** 2)
-        # 返回的数量必须跟 forward 的输入参数一一对应
+        # 返回值数量 == forward 输入参数数量（此处为 2）
         return grad_x, grad_y
 
 print("=== 多输入自定义 Function ===")
-
 x = torch.tensor(2.0, requires_grad=True)
 y = torch.tensor(3.0, requires_grad=True)
 
 z = MyOp.apply(x, y)
 z.backward()
 
-print(f"z = x²y + y³ = {z.item()}")
-print(f"∂z/∂x = 2xy = {x.grad.item()} (期望: {2*2*3})")
-print(f"∂z/∂y = x² + 3y² = {y.grad.item()} (期望: {4+27})")
+print(f"z = x²y + y³ = {z.item():.1f}  （期望 {2**2*3 + 3**3}）")
+print(f"∂z/∂x = 2xy  = {x.grad.item():.1f}  （期望 {2*2*3}）")
+print(f"∂z/∂y = x²+3y² = {y.grad.item():.1f}  （期望 {2**2 + 3*3**2}）")
 
-# 用 gradcheck 验证我们写的 backward 对不对
-from torch.autograd import gradcheck
-x_test = torch.tensor(2.0, requires_grad=True, dtype=torch.float64)
-y_test = torch.tensor(3.0, requires_grad=True, dtype=torch.float64)
-test = gradcheck(MyOp.apply, (x_test, y_test), eps=1e-6)
-print(f"gradcheck 验证: {test}")
-
+# gradcheck：float64 + 双精度中心差商，严格验证 backward 实现正确性
+x64 = torch.tensor(2.0, dtype=torch.float64, requires_grad=True)
+y64 = torch.tensor(3.0, dtype=torch.float64, requires_grad=True)
+print(f"gradcheck 验证: {gradcheck(MyOp.apply, (x64, y64), eps=1e-6)}")
 print()
 
-# ========== 例4：save_for_backward 的注意事项 ==========
-print("=== ctx 的用法细节 ===")
+# ========== 例 4：ctx 的使用规范 ==========
+#
+# save_for_backward 的设计原因：
+#   PyTorch 在内部对 saved tensor 进行版本追踪——若 forward 保存的 tensor
+#   在 backward 调用前被 in-place 修改，PyTorch 会检测到版本号变化并抛出错误，
+#   而非静默地使用被污染的数据。直接用 ctx.attr = tensor 绕过此保护。
+#
+# 非 tensor 的超参数（int, float, bool）直接赋给 ctx 属性，不需要 save_for_backward。
+# backward 中不需要梯度的对应输入（如 scale）返回 None，
+# PyTorch 据此决定是否继续向更早的节点传播梯度。
 
-class DemoFunction(Function):
+class ScaleFunction(Function):
     @staticmethod
     def forward(ctx, x, scale):
-        # save_for_backward 只能存 tensor
-        ctx.save_for_backward(x)
-        # 非 tensor 的东西用 ctx 的属性存
-        ctx.scale = scale
+        ctx.save_for_backward(x)        # tensor：受版本保护
+        ctx.scale = scale               # 非 tensor：直接存为属性
         return x * scale
-    
+
     @staticmethod
     def backward(ctx, grad_output):
-        x, = ctx.saved_tensors
-        scale = ctx.scale  # 取出非 tensor 的值
-        return grad_output * scale, None  # scale 不需要梯度，返回 None
+        x,    = ctx.saved_tensors
+        scale = ctx.scale
+        # scale 是常量超参数，无需梯度，对应返回 None
+        return grad_output * scale, None
 
+print("=== ctx 使用规范 ===")
 x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
-y = DemoFunction.apply(x, 5.0)  # scale=5
+y = ScaleFunction.apply(x, 5.0)
 y.sum().backward()
-print(f"输入: {x.data}")
-print(f"输出 (x * 5): {y.data}")
-print(f"梯度: {x.grad}")  # [5, 5, 5]
+
+print(f"输入:    {x.data}")
+print(f"输出:    {y.data}  （x × 5）")
+print(f"梯度:    {x.grad}  （期望 [5, 5, 5]）")
 
 print()
 print("=== 总结 ===")
 print("""
-1. 自定义 Function 需要实现 forward 和 backward 两个 staticmethod
-2. ctx.save_for_backward() 存 tensor，ctx.xxx 存其他东西
-3. backward 返回值的数量 = forward 输入参数的数量（不需要梯度的返回 None）
-4. 用 gradcheck 可以验证你的 backward 写对了没有
-5. STE（Straight-Through Estimator）是量化训练的基础
-6. 调用方式是 MyFunction.apply(args)，不是 MyFunction(args)
+1. 继承 Function，实现 @staticmethod forward / backward
+2. ctx.save_for_backward 仅存 tensor（含版本保护）；非 tensor 用 ctx.attr 直接赋值
+3. backward 返回数量 = forward 输入参数数量，不需要梯度的返回 None
+4. 调用方式必须是 MyFunc.apply(args)，不能直接调用 forward
+5. STE 是量化网络训练的核心：前向量化，反向直通（Bengio et al., 2013）
+6. gradcheck 是验证自定义 backward 正确性的标准工具，必须使用 float64
 """)

@@ -1,155 +1,151 @@
 # 03_computational_graph.py
-# 用途：深入理解 PyTorch 动态计算图（Dynamic Computational Graph）
-# 
-# 很多人用 PyTorch 写了一年代码，都没真正搞明白计算图到底是什么。
-# 这个文件带你把计算图"看"出来。
+# 深入理解 PyTorch 动态计算图（Dynamic Computational Graph）
+#
+# 计算图本质是一个有向无环图（DAG）：
+#   节点（Node）—— 运算（op），如加、乘、ReLU
+#   边（Edge）   —— 数据流（tensor），携带形状与 dtype 信息
+#
+# PyTorch 采用"define-by-run"（动态图/eager 模式）范式：
+# 计算图在前向传播执行时即时构建，backward() 结束后默认释放。
+# 这与 TensorFlow 1.x / Theano 的"define-and-run"（静态图）相对立。
+# 动态图的核心优势：Python 原生控制流（if/for/while）可直接参与图结构，
+# 使变长序列、递归网络、元学习（MAML）等场景的实现大幅简化。
 
 import torch
 
-# ========== 什么是计算图？ ==========
-# 
-# 你每次写 c = a + b，PyTorch 不仅算出 c 的值，
-# 还偷偷在后台画了一条线：a → (+) → c, b → (+) → c
-# 这条线就是计算图。backward() 就是沿着这条线往回走，算梯度。
-
-# --- 例1：看看 grad_fn ---
-# grad_fn 就是计算图上每个节点的"来源"信息
+# ========== grad_fn：每个节点记录其"来源运算" ==========
+#
+# 每当一个 requires_grad 参与的运算产生新 tensor，
+# PyTorch 就在该 tensor 上挂一个 grad_fn 对象，
+# 内部持有指向输入 tensor 的弱引用（weak reference）和局部梯度函数。
+# backward() 本质是一次拓扑排序后的深度优先遍历，
+# 对每个 grad_fn 调用 accumulate_grad 将结果写入叶子节点的 .grad。
 
 a = torch.tensor(2.0, requires_grad=True)
 b = torch.tensor(3.0, requires_grad=True)
 
-c = a + b        # c 是怎么来的？加法
-d = a * b        # d 是怎么来的？乘法
-e = c + d        # e 是怎么来的？加法
-f = e.mean()     # f 是怎么来的？求均值（虽然只有一个元素，但还是会记录）
+c = a + b        # grad_fn = AddBackward0
+d = a * b        # grad_fn = MulBackward0
+e = c + d        # grad_fn = AddBackward0（依赖 c, d）
+f = e.mean()     # grad_fn = MeanBackward0
 
-print("=== 计算图的 grad_fn（每个节点是怎么来的）===")
-print(f"a.grad_fn = {a.grad_fn}")   # None，因为 a 是叶子节点（用户创建的）
+print("=== grad_fn（每个非叶子 tensor 的来源运算）===")
+print(f"a.grad_fn = {a.grad_fn}")   # None：叶子节点无来源
 print(f"c.grad_fn = {c.grad_fn}")   # AddBackward0
 print(f"d.grad_fn = {d.grad_fn}")   # MulBackward0
 print(f"e.grad_fn = {e.grad_fn}")   # AddBackward0
 print(f"f.grad_fn = {f.grad_fn}")   # MeanBackward0
 print()
 
-# --- 叶子节点 vs 非叶子节点 ---
-# "叶子节点"就是你自己创建的 tensor（比如模型参数 w, b）
-# "非叶子节点"是通过运算得到的中间结果
+# ---- 叶子节点 vs 中间节点 ----
+# "叶子节点"（is_leaf=True）：由用户直接创建（如模型参数 w, b）。
+# "中间节点"（is_leaf=False）：由运算产生，其 .grad 默认在 backward 后被释放，
+# 以避免 O(N) 的额外显存开销。如需保留，见 retain_grad() 和 04_hooks.py。
 print("=== 叶子节点判断 ===")
 print(f"a 是叶子节点: {a.is_leaf}")   # True
-print(f"c 是叶子节点: {c.is_leaf}")   # False，c 是 a+b 算出来的
-print(f"e 是叶子节点: {e.is_leaf}")   # False
+print(f"c 是叶子节点: {c.is_leaf}")   # False
 print()
-
-# 重要：默认只有叶子节点的 .grad 会被保留！
-# 中间节点的梯度算完就扔了（省内存）
-# 后面的 04_hooks.py 会教你怎么拿到中间节点的梯度
 
 f.backward()
-print("=== backward() 之后 ===")
-print(f"a.grad = {a.grad}")   # ∂f/∂a = ∂(a+b+a*b)/∂a = 1 + b = 1 + 3 = 4
-print(f"b.grad = {b.grad}")   # ∂f/∂b = 1 + a = 1 + 2 = 3
+print("=== backward() 后叶子节点的梯度 ===")
+# f = (a+b + a*b) = e，mean() 对标量无效果
+# ∂f/∂a = ∂(a+b)/∂a + ∂(a*b)/∂a = 1 + b = 1 + 3 = 4
+# ∂f/∂b = ∂(a+b)/∂b + ∂(a*b)/∂b = 1 + a = 1 + 2 = 3
+print(f"a.grad = {a.grad}  （期望 4 = 1 + b）")
+print(f"b.grad = {b.grad}  （期望 3 = 1 + a）")
 
-# c 是非叶子节点，梯度默认不保留
-# 下面这行会触发一个 UserWarning —— 这不是报错，只是 PyTorch 在提醒你：
-# "c 不是叶子节点，它的 .grad 不会被 backward() 填充"
-# 这正是我们要演示的：非叶子节点拿不到梯度（想拿的话看 04_hooks.py）
-print(f"c.grad = {c.grad}")   # None！有警告是正常的
-
+# 中间节点 c 的 .grad 为 None，访问时触发 UserWarning（这是正常行为）
+print(f"c.grad = {c.grad}   ← 非叶子节点梯度默认不保留（UserWarning 属预期行为）")
 print()
 
-# ========== 动态图 vs 静态图 ==========
+# ========== 动态图：每次前向传播独立构建 ==========
 #
-# TensorFlow 1.x 用静态图：先画好整张图，然后 session.run()
-# PyTorch 用动态图：每次前向传播都重新建图，backward() 后图就没了
-#
-# 动态图的好处：
-# 1. 图的结构可以随数据变化（比如 NLP 中句子长度不同）
-# 2. 可以用 Python 的 if/for 控制流，非常灵活
-# 3. debug 方便，跟普通 Python 代码一样单步调试
+# 每次执行 Python 代码，PyTorch 都从零建立一张新图。
+# 这意味着：图的拓扑结构本身可以是输入数据的函数。
+# 典型场景：① NLP 中不同长度的句子走不同展开深度的 RNN；
+#           ② 强化学习中依据当前状态决定计算路径；
+#           ③ Neural ODE / 递归网络（树结构）。
 
-# --- 例2：动态图的意思 —— 每次 forward 图可以不一样 ---
-
-print("=== 动态图演示：图的结构随数据变化 ===")
+print("=== 动态图：图结构随运行时数据分支变化 ===")
 
 x = torch.tensor(1.5, requires_grad=True)
 
 for i in range(3):
-    # 每轮循环，计算图的结构都可以不同
+    # 计算图的结构取决于当前 x 的值——静态图框架无法直接表达此逻辑
     if x.item() > 1.0:
-        y = x ** 2        # x > 1 走这条路
+        y = x ** 2          # 此轮图：x → (pow) → y，局部梯度 = 2x
     else:
-        y = x * 3         # x <= 1 走这条路
-    
+        y = x * 3           # 此轮图：x → (mul) → y，局部梯度 = 3
+
     y.backward()
-    print(f"轮次 {i}: x={x.data:.4f}, y={y.data:.4f}, grad={x.grad.item():.4f}, "
-          f"走的分支: {'x²' if x.item() > 1.0 else '3x'}")
-    
-    # 更新 x（让它变小，看看会不会走不同分支）
+    print(f"轮次 {i}: x={x.data:.4f}, y={y.data:.4f}, "
+          f"grad={x.grad.item():.4f}, 分支={'x²' if x.item() > 1.0 else '3x'}")
+
     with torch.no_grad():
         x -= 0.5 * x.grad
         x.grad.zero_()
 
 print()
 
-# ========== retain_graph 的用法 ==========
-# 
-# 默认 backward() 之后计算图就被销毁了。
-# 如果你需要对同一个 loss 做两次 backward（比较少见），
-# 就需要 retain_graph=True
+# ========== retain_graph：让图在一次 backward 后存活 ==========
+#
+# 默认行为：backward() 遍历 DAG 的同时释放中间激活值（节省显存）。
+# retain_graph=True 阻止释放，用于：
+#   ① 对同一 loss 分别关于不同参数子集求梯度；
+#   ② 高阶梯度计算（需配合 create_graph=True）；
+#   ③ 某些 GAN 训练中的双路反向传播。
+# 注意：多次 backward 时梯度会累加，需在合适位置手动清零。
 
 print("=== retain_graph 演示 ===")
 
 x = torch.tensor(2.0, requires_grad=True)
-y = x ** 3   # y = x³
+y = x ** 3   # y = x³，∂y/∂x = 3x² = 12
 
-# 第一次 backward，保留图
 y.backward(retain_graph=True)
-print(f"第一次 backward: x.grad = {x.grad}")  # 3 * x² = 12
+print(f"第 1 次 backward: x.grad = {x.grad}  （期望 12）")
 
-# 注意！梯度会累加！所以 x.grad 现在是 12
-# 如果再来一次 backward...
 y.backward(retain_graph=True)
-print(f"第二次 backward（梯度累加了）: x.grad = {x.grad}")  # 12 + 12 = 24
+print(f"第 2 次 backward（梯度累加）: x.grad = {x.grad}  （12 + 12 = 24）")
 
-# 清零后再来
 x.grad.zero_()
-y.backward()  # 这次不保留图了
-print(f"清零后第三次 backward: x.grad = {x.grad}")  # 12
-
+y.backward()  # 此次不保留图
+print(f"清零后第 3 次 backward: x.grad = {x.grad}  （期望 12）")
 print()
 
-# ========== detach() —— 从计算图上"剪断" ==========
+# ========== detach()：从图中剪断节点 ==========
 #
-# 有时候你想拿到某个中间结果的数值，但不想它影响梯度计算
-# 比如做 GAN 训练时，生成器的输出传给判别器，
-# 但更新判别器时不想梯度传回生成器
+# detach() 返回与原 tensor 共享底层存储但不属于任何计算图的新 tensor。
+# 经典用例：
+#   GAN —— 训练判别器时将生成器输出 detach，避免梯度流入生成器；
+#   Target Network（DQN）—— 用 detach 的网络输出计算 Bellman 目标；
+#   可视化 / 日志 —— 不希望 .item() 之外的操作污染计算图。
+#
+# detach() vs .data：
+#   detach() 受版本计数器（version counter）保护，对 detach 后的 tensor
+#   进行 in-place 修改再访问原 tensor 时会正确报错；
+#   .data 绕过版本计数器，静默地破坏图的一致性，风险更高。
 
-print("=== detach() 演示 ===")
+print("=== detach()：从计算图剪断 ===")
 
 x = torch.tensor(3.0, requires_grad=True)
-y = x * 2        # y 在计算图上
-z = y.detach()    # z 就是 y 的值（6.0），但跟计算图无关了
+y = x * 2        # y ∈ 计算图，requires_grad=True
+z = y.detach()   # z 与 y 共享存储，但 requires_grad=False
 
-print(f"y = {y}, y.requires_grad = {y.requires_grad}")
-print(f"z = {z}, z.requires_grad = {z.requires_grad}")
-print(f"y 和 z 的值相同: {y.item() == z.item()}")
-print(f"但 z 不在计算图中，对 z 做任何操作都不会影响 x 的梯度")
+print(f"y = {y},  y.requires_grad = {y.requires_grad}")
+print(f"z = {z},  z.requires_grad = {z.requires_grad}")
+print(f"y 和 z 指向相同底层数据: {y.data_ptr() == z.data_ptr()}")
 
-# 用 z 算出来的东西，梯度传不回 x
-w = z * 5
-# w.backward()  # 如果取消注释，会报错，因为 z 没有 grad_fn
-
-# 而用 y 算出来的东西，梯度能传回 x
+# 经由 y 的后续运算梯度可传回 x；经由 z 则不能
 w = y * 5
 w.backward()
-print(f"通过 y 计算的 w 对 x 的梯度: x.grad = {x.grad}")  # 2*5 = 10
+print(f"经由 y: x.grad = {x.grad}  （期望 2×5 = 10）")
 
 print()
-print("=== 总结 ===")
+print("=== 核心要点总结 ===")
 print("""
-1. 每次前向传播 PyTorch 建图，backward() 后图销毁 —— 这就是"动态图"
-2. 只有叶子节点的 .grad 会保留（中间结果的梯度默认丢弃）
-3. grad_fn 告诉你每个 tensor 是怎么算出来的
-4. detach() 是从图上剪断的手术刀
-5. retain_graph=True 让图活过一次 backward()，但一般用不到
+1. 计算图是 DAG：边为 tensor，节点为运算（grad_fn）
+2. define-by-run：每次前向传播重建图，图结构可随数据分支变化
+3. 仅叶子节点的 .grad 默认保留；中间节点梯度在 backward 后释放
+4. retain_graph=True 阻止图被释放，但多次 backward 会累加梯度
+5. detach() 是安全地从图中"剪断"的首选方式，优于直接访问 .data
 """)
