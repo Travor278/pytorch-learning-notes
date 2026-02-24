@@ -2,12 +2,13 @@
 
 # PyTorch Learning Notes
 
-From-scratch PyTorch study notes covering five tracks:
+From-scratch PyTorch study notes covering seven tracks:
 - Autograd fundamentals (`00` to `08`)
 - Dataset / DataLoader / TensorBoard practice
 - `nn.Module` layers, loss functions, and network building
 - Model saving, loading, and pretrained models
 - Full training loop on CPU and GPU
+- Advanced topic modules: training engineering, loss functions, model architecture, PEFT, generative models, evaluation & inference, multimodal
 
 ## Project Structure
 
@@ -94,6 +95,64 @@ Datasets, TensorBoard logs, and trained `.pth` model files are intentionally exc
 ```bash
 pip install torch torchvision tensorboard
 ```
+
+### 7) Advanced Topic Modules
+
+#### `training_engineering/`
+
+| File | Description |
+|------|-------------|
+| `optimizer_scheduler.py` | AdamW vs Adam (decoupled weight decay), parameter groups, StepLR / CosineAnnealingLR / OneCycleLR, linear warmup + cosine decay |
+| `amp_training.py` | FP16 / BF16 / FP32 formats, `autocast` + `GradScaler`, loss scaling theory, CPU vs GPU speed comparison |
+| `gradient_checkpoint.py` | Activation recomputation, `torch.utils.checkpoint`, memory–compute trade-off, segment checkpoint strategy |
+| `distributed_training.py` | DataParallel vs DDP, Ring-AllReduce principle, single-machine multi-GPU `mp.spawn` setup |
+
+#### `loss_functions/`
+
+| File | Description |
+|------|-------------|
+| `kl_divergence.py` | KL divergence definition, forward vs reverse KL (mean-seeking vs mode-seeking), temperature scaling, knowledge distillation (Hinton 2015), connection to SEED |
+| `contrastive_loss.py` | InfoNCE, NT-Xent (SimCLR), Triplet loss, in-batch negatives and temperature |
+| `focal_loss.py` | Focal loss for class imbalance (Lin et al. 2017), modulating factor `(1−p_t)^γ`, multi-class extension |
+| `label_smoothing.py` | Label smoothing theory, KL-penalty interpretation, `F.cross_entropy(label_smoothing=)`, calibration vs distillation trade-off |
+
+#### `model_architecture/`
+
+| File | Description |
+|------|-------------|
+| `attention_mechanism.py` | Scaled dot-product attention, causal mask, multi-head attention from scratch, `nn.MultiheadAttention` |
+| `positional_encoding.py` | Sinusoidal PE (Vaswani 2017), learnable PE (BERT), RoPE (LLaMA / LLaVA) |
+| `residual_connection.py` | Residual gradient flow analysis, BasicBlock with projection shortcut, Post-LN vs Pre-LN, RMSNorm |
+| `normalization.py` | BatchNorm / LayerNorm / GroupNorm / InstanceNorm — statistics dimensions, selection guide |
+
+#### `peft/`
+
+| File | Description |
+|------|-------------|
+| `lora_principle.py` | LoRA math `W = W₀ + (α/r)BA`, zero-init of B, `LoRALinear` wrapper, applying LoRA to model layers |
+| `adapter_layers.py` | Bottleneck adapter (Houlsby 2019), gated vs serial insertion, PEFT method comparison table |
+
+#### `generative_models/`
+
+| File | Description |
+|------|-------------|
+| `vae_basics.py` | ELBO derivation, reparameterization trick `z = μ + σε`, KL analytical solution, β-VAE |
+| `diffusion_basics.py` | DDPM forward process `q(x_t|x_0)`, noise prediction loss `L_simple`, sinusoidal time embedding, ancestral sampling |
+| `gan_training.py` | GAN minimax objective, non-saturating loss, training loop, mode collapse analysis, WGAN-GP gradient penalty |
+
+#### `evaluation_inference/`
+
+| File | Description |
+|------|-------------|
+| `sampling_strategies.py` | Greedy, temperature sampling, Top-k, Top-p (nucleus, Holtzman 2020), repetition penalty |
+| `beam_search.py` | Beam search algorithm, length penalty (Wu et al. 2016), diverse beam search concept, strategy selection guide |
+
+#### `multimodal/`
+
+| File | Description |
+|------|-------------|
+| `clip_contrastive.py` | CLIP symmetric InfoNCE, learnable temperature `logit_scale`, zero-shot classification, role in LLaVA / SEED |
+| `cross_attention.py` | Cross-attention Q/K/V from different modalities, gated cross-attention (Flamingo 2022), Q-Former (BLIP-2 2023) |
 
 ## Suggested Learning Path
 

@@ -2,12 +2,13 @@
 
 # PyTorch 学习笔记
 
-这是一个从零开始的 PyTorch 学习仓库，当前覆盖五条线：
+这是一个从零开始的 PyTorch 学习仓库，当前覆盖七条线：
 - Autograd 核心原理（`00` 到 `08`）
 - Dataset / DataLoader / TensorBoard 数据流实践
 - `nn.Module` 各类层、损失函数与完整网络搭建
 - 模型保存、加载与预训练模型使用
 - CPU / GPU 完整训练流程
+- 进阶专题模块：训练工程、损失函数、模型架构、参数高效微调、生成模型、评估推理、多模态
 
 ## 目录结构
 
@@ -94,6 +95,64 @@
 ```bash
 pip install torch torchvision tensorboard
 ```
+
+### 7）进阶专题模块
+
+#### `training_engineering/`（训练工程）
+
+| 文件 | 说明 |
+|------|------|
+| `optimizer_scheduler.py` | AdamW vs Adam（解耦 weight decay）、参数组差异化学习率、StepLR / CosineAnnealing / OneCycleLR、LambdaLR 实现 warmup |
+| `amp_training.py` | FP16 / BF16 / FP32 格式对比、`autocast` + `GradScaler`、loss scaling 原理 |
+| `gradient_checkpoint.py` | 激活重计算原理、`torch.utils.checkpoint` 用法、显存–计算权衡、分段策略 |
+| `distributed_training.py` | DataParallel vs DDP 本质区别、Ring-AllReduce 梯度同步、`mp.spawn` 单机多卡启动 |
+
+#### `loss_functions/`（损失函数）
+
+| 文件 | 说明 |
+|------|------|
+| `kl_divergence.py` | KL 散度定义、正向 vs 反向 KL（均值寻找 vs 模式寻找）、温度缩放、知识蒸馏（Hinton 2015）、与 SEED 的关联 |
+| `contrastive_loss.py` | InfoNCE、NT-Xent（SimCLR）、Triplet Loss、in-batch negatives 与温度参数 |
+| `focal_loss.py` | Focal Loss 处理类别不平衡（Lin 2017）、调制因子 `(1−p_t)^γ`、多分类扩展 |
+| `label_smoothing.py` | 标签平滑理论、KL 惩罚解释、`F.cross_entropy(label_smoothing=)`、校准与蒸馏的权衡 |
+
+#### `model_architecture/`（模型架构）
+
+| 文件 | 说明 |
+|------|------|
+| `attention_mechanism.py` | Scaled Dot-Product Attention、因果掩码、多头注意力从头实现、`nn.MultiheadAttention` |
+| `positional_encoding.py` | 正弦 PE（Vaswani 2017）、可学习 PE（BERT）、RoPE（LLaMA / LLaVA） |
+| `residual_connection.py` | 残差梯度流分析、BasicBlock + projection shortcut、Post-LN vs Pre-LN、RMSNorm |
+| `normalization.py` | BatchNorm / LayerNorm / GroupNorm / InstanceNorm — 统计维度与选型指南 |
+
+#### `peft/`（参数高效微调）
+
+| 文件 | 说明 |
+|------|------|
+| `lora_principle.py` | LoRA 数学 `W = W₀ + (α/r)BA`、B 零初始化、`LoRALinear` 包装、替换模型层 |
+| `adapter_layers.py` | 瓶颈 Adapter（Houlsby 2019）、门控 vs 串行插入、PEFT 方法横向对比 |
+
+#### `generative_models/`（生成模型）
+
+| 文件 | 说明 |
+|------|------|
+| `vae_basics.py` | ELBO 推导、重参数技巧 `z = μ + σε`、KL 解析解、β-VAE |
+| `diffusion_basics.py` | DDPM 前向过程 `q(x_t|x_0)`、噪声预测损失 `L_simple`、正弦时间嵌入、祖先采样 |
+| `gan_training.py` | GAN 极大极小目标、非饱和损失、训练循环、模式崩塌分析、WGAN-GP 梯度惩罚 |
+
+#### `evaluation_inference/`（评估与推理）
+
+| 文件 | 说明 |
+|------|------|
+| `sampling_strategies.py` | 贪心、温度采样、Top-k、Top-p（Nucleus，Holtzman 2020）、重复惩罚 |
+| `beam_search.py` | Beam Search 算法、长度惩罚（Wu 2016）、Diverse Beam Search 概念、解码策略选型 |
+
+#### `multimodal/`（多模态专项）
+
+| 文件 | 说明 |
+|------|------|
+| `clip_contrastive.py` | CLIP 双向 InfoNCE、可学习温度 `logit_scale`、零样本分类、在 LLaVA/SEED 中的角色 |
+| `cross_attention.py` | 跨模态 Cross-Attention、门控交叉注意力（Flamingo 2022）、Q-Former（BLIP-2 2023） |
 
 ## 推荐学习顺序
 
