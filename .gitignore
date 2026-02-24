@@ -3,6 +3,9 @@ data/
 dataset/
 dataset2/
 
+# Saved model files
+*.pth
+
 # TensorBoard logs
 logs/
 dataloader/

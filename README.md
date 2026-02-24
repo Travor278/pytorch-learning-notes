@@ -2,10 +2,12 @@
 
 # PyTorch Learning Notes
 
-From-scratch PyTorch study notes focused on three tracks:
+From-scratch PyTorch study notes covering five tracks:
 - Autograd fundamentals (`00` to `08`)
 - Dataset / DataLoader / TensorBoard practice
-- `nn.Module`, activation, pooling, and convolution demos
+- `nn.Module` layers, loss functions, and network building
+- Model saving, loading, and pretrained models
+- Full training loop on CPU and GPU
 
 ## Project Structure
 
@@ -51,7 +53,24 @@ From-scratch PyTorch study notes focused on three tracks:
 | `nn_optim.py` | Add `torch.optim.SGD` to the full network: `zero_grad` → `backward` → `step` complete training loop over 20 epochs |
 | `nn_common_layers.py` | Overview of other common layers: `BatchNorm2d`, `Dropout`, `AvgPool2d`, `AdaptiveAvgPool2d`, `Flatten`, `Embedding` |
 
-### 4) Quick Console Check
+### 4) Model Saving, Loading & Pretrained Models
+
+| File | Description |
+|------|-------------|
+| `model.py` | Standalone `Moli` CNN definition (imported by `train.py`) |
+| `model_save.py` | Two save strategies: full model (`torch.save(model)`) vs state dict (`model.state_dict()`); custom class save trap demo |
+| `model_load.py` | Load method 1 with `weights_only=False`; load method 2 with `load_state_dict`; PyTorch 2.6 pitfall notes |
+| `model_pretrained.py` | Load VGG16 with/without pretrained weights; modify classifier by `add_module` or layer replacement |
+
+### 5) Full Training Loop
+
+| File | Description |
+|------|-------------|
+| `train.py` | Complete CPU training: data → model → loss → optimizer → train/eval loop → TensorBoard → save checkpoint each epoch |
+| `train_gpu_1.py` | GPU training using `.cuda()` — hardcoded CUDA device, add timing with `time` module |
+| `train_gpu_2.py` | GPU training using `.to(device)` — recommended pattern, device-agnostic (swap `"cuda"` to `"cpu"` freely) |
+
+### 6) Quick Console Check
 
 | File | Description |
 |------|-------------|
@@ -63,7 +82,7 @@ From-scratch PyTorch study notes focused on three tracks:
 - `dataset/`: hymenoptera (ants vs bees)
 - `dataset2/`: CIFAR-10
 
-Large datasets and TensorBoard logs are intentionally excluded from git via `.gitignore`.
+Datasets, TensorBoard logs, and trained `.pth` model files are intentionally excluded from git via `.gitignore`.
 
 ## Requirements
 
@@ -81,4 +100,6 @@ pip install torch torchvision tensorboard
 1. Start with `00` -> `08` (Autograd core).
 2. Move to transforms/dataset scripts (`test_Tf.py`, `Useful_TF.py`, `read_data.py`, `dataset_transform.py`).
 3. Continue with batching and visualization (`dataloader.py`, `test_tb.py`).
-4. Finish with model components in order: activations & pooling (`nn_relu.py`, `nn_maxpool.py`) → convolution (`nn_conv.py`, `nn_conv2d.py`) → linear (`nn_linear.py`) → Sequential networks (`nn_seq.py`) → loss functions (`nn_loss.py`, `nn_loss_network.py`) → other common layers (`nn_common_layers.py`).
+4. Work through `nn` modules: activations & pooling → convolution → linear → Sequential → loss functions → optimizer → common layers.
+5. Study model persistence: `model_save.py` → `model_load.py` → `model_pretrained.py`.
+6. Run a full training loop: `train.py` (CPU) → `train_gpu_1.py` → `train_gpu_2.py` (recommended GPU pattern).
