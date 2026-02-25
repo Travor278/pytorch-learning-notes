@@ -1,11 +1,9 @@
 # 02_autograd_basics.py
 # PyTorch 自动求导（Autograd）入门
 #
-# PyTorch 的 autograd 基于 Wengert list（也称"磁带"，tape），
-# 即在前向传播时将所有运算记录在一条有向无环图（DAG）上，
-# 随后在反向传播时沿图反向遍历，逐节点应用链式法则。
-# 这与 Griewank & Walther (2008) "Evaluating Derivatives" 中描述的
-# 反向模式 AD 在算法上完全等价。
+# PyTorch 的 autograd 基于 Wengert list（也称"磁带"，tape），即在前向传播时将所有运算
+# 记录在一条有向无环图（DAG）上，随后在反向传播时沿图反向遍历，逐节点应用链式法则。
+# 这与 Griewank & Walther (2008) "Evaluating Derivatives" 中描述的反向模式 AD 在算法上完全等价。
 #
 # 关键 API：
 #   requires_grad=True  —— 将 tensor 标记为可微参数，令其入计算图

@@ -1,8 +1,7 @@
 # 04_hooks.py
 # Tensor Hook 与 Module Hook 机制
 #
-# Hook 是 PyTorch 提供的"拦截器"接口，允许在前向/反向传播的特定位置
-# 注册回调函数，以观测或修改中间激活值和梯度。
+# Hook 是 PyTorch 提供的"拦截器"接口，允许在前向/反向传播的特定位置注册回调函数，以观测或修改中间激活值和梯度。
 #
 # 工程应用（非完整列举）：
 #   ① Grad-CAM 可视化（Selvaraju et al., ICCV 2017）

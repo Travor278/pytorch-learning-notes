@@ -3,23 +3,20 @@
 #
 # 计算图本质是一个有向无环图（DAG）：
 #   节点（Node）—— 运算（op），如加、乘、ReLU
-#   边（Edge）   —— 数据流（tensor），携带形状与 dtype 信息
+#   边（Edge）—— 数据流（tensor），携带形状与 dtype 信息
 #
 # PyTorch 采用"define-by-run"（动态图/eager 模式）范式：
 # 计算图在前向传播执行时即时构建，backward() 结束后默认释放。
 # 这与 TensorFlow 1.x / Theano 的"define-and-run"（静态图）相对立。
-# 动态图的核心优势：Python 原生控制流（if/for/while）可直接参与图结构，
-# 使变长序列、递归网络、元学习（MAML）等场景的实现大幅简化。
+# 动态图的核心优势：Python 原生控制流（if/for/while）可直接参与图结构，使变长序列、递归网络、元学习（MAML）等场景的实现大幅简化。
 
 import torch
 
 # ========== grad_fn：每个节点记录其"来源运算" ==========
 #
-# 每当一个 requires_grad 参与的运算产生新 tensor，
-# PyTorch 就在该 tensor 上挂一个 grad_fn 对象，
+# 每当一个 requires_grad 参与的运算产生新 tensor，PyTorch 就在该 tensor 上挂一个 grad_fn 对象，
 # 内部持有指向输入 tensor 的弱引用（weak reference）和局部梯度函数。
-# backward() 本质是一次拓扑排序后的深度优先遍历，
-# 对每个 grad_fn 调用 accumulate_grad 将结果写入叶子节点的 .grad。
+# backward() 本质是一次拓扑排序后的深度优先遍历，对每个 grad_fn 调用 accumulate_grad 将结果写入叶子节点的 .grad。
 
 a = torch.tensor(2.0, requires_grad=True)
 b = torch.tensor(3.0, requires_grad=True)
@@ -63,8 +60,8 @@ print()
 # 每次执行 Python 代码，PyTorch 都从零建立一张新图。
 # 这意味着：图的拓扑结构本身可以是输入数据的函数。
 # 典型场景：① NLP 中不同长度的句子走不同展开深度的 RNN；
-#           ② 强化学习中依据当前状态决定计算路径；
-#           ③ Neural ODE / 递归网络（树结构）。
+#         ② 强化学习中依据当前状态决定计算路径；
+#         ③ Neural ODE / 递归网络（树结构）。
 
 print("=== 动态图：图结构随运行时数据分支变化 ===")
 
