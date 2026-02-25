@@ -47,6 +47,3 @@ v = torch.tensor([1.0, 2.0, 3.0])
 J = jacobian(f, v)
 # 期望：[[2,1,0],[0,4,1],[3,0,1]]（在 v=[1,2,3] 处求值）
 print("Jacobian:\n", J)
-
-#%%
-print("Done. 在 VS Code 中用 Shift+Enter 逐块执行各 #%% 单元。")
