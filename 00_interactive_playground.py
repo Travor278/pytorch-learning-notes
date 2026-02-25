@@ -2,11 +2,9 @@
 # 00_interactive_playground.py
 # 快速验证环境，并以最小示例感知 autograd 的"形"与 Jacobian 的"意"。
 #
-# PyTorch 的自动求导基于反向模式自动微分（Reverse-Mode Automatic Differentiation，
-# 亦称 Backpropagation）。与前向模式 AD 相比，反向模式在"输出维度远小于输入维度"
-# 时（神经网络的标量损失对数百万参数求导恰好符合此条件）计算复杂度更低。
-# 参考：Baydin et al., "Automatic Differentiation in Machine Learning: a Survey",
-#       JMLR 2018.
+# PyTorch 的自动求导基于反向模式自动微分（Reverse-Mode Automatic Differentiation，亦称 Backpropagation）。
+# 与前向模式 AD 相比，反向模式在"输出维度远小于输入维度"时（神经网络的标量损失对数百万参数求导恰好符合此条件）计算复杂度更低。
+# 参考：Baydin et al., "Automatic Differentiation in Machine Learning: a Survey", JMLR 2018.
 
 import torch
 
