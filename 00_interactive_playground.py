@@ -20,7 +20,7 @@ print(f"CUDA build ver:   {torch.version.cuda}")
 # 分析解：∂y/∂x_i = 2 * 2 * (2x_i + 1) = 4(2x_i + 1)
 # x = [1, 2, 3] → 期望梯度 = [4*(3), 4*(5), 4*(7)] = [12, 20, 28]
 
-x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True)
+x = torch.tensor([1.0, 2.0, 3.0], requires_grad=True) # requires_grad=True 使得 PyTorch 追踪对 x 的操作以便后续求导
 y = (x * 2 + 1).pow(2).sum()
 y.backward()
 
@@ -46,4 +46,5 @@ from torch.autograd.functional import jacobian
 v = torch.tensor([1.0, 2.0, 3.0])
 J = jacobian(f, v)
 # 期望：[[2,1,0],[0,4,1],[3,0,1]]（在 v=[1,2,3] 处求值）
+print("f(v):\n", f(v))
 print("Jacobian:\n", J)
