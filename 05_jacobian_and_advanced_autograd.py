@@ -51,8 +51,7 @@ print()
 
 # ---- 方法 1：用 backward + 单位向量逐行提取（手动 VJP）----
 # backward(v) 计算的是 VJP：vᵀ·J（行向量与 Jacobian 的乘积）。
-# 令 v = eᵢ（第 i 个标准基向量），则 eᵢᵀ·J = J 的第 i 行，
-# 即 ∂yᵢ/∂x。循环 m 次即可重建完整 J，代价为 m 次反向传播。
+# 令 v = eᵢ（第 i 个标准基向量），则 eᵢᵀ·J = J 的第 i 行，即 ∂yᵢ/∂x。循环 m 次即可重建完整 J，代价为 m 次反向传播。
 
 def compute_jacobian_via_backward(func, x_val):
     """通过 m 次 VJP 重建 m×n Jacobian"""
@@ -73,8 +72,7 @@ J_manual = compute_jacobian_via_backward(f, torch.tensor([1.0, 2.0, 3.0]))
 print(f"方法 1（手动 VJP）:\n{J_manual}\n")
 
 # ---- 方法 2：torch.autograd.functional.jacobian（推荐）----
-# 内部同样调用 m 次 VJP（或切换到 forward-mode AD 使用 jvp），
-# 但封装更简洁，支持更多高级选项（如 vectorize 加速）。
+# 内部同样调用 m 次 VJP（或切换到 forward-mode AD 使用 jvp），但封装更简洁，支持更多高级选项（如 vectorize 加速）。
 
 x_val = torch.tensor([1.0, 2.0, 3.0])
 J_auto = jacobian(f, x_val)
@@ -98,8 +96,7 @@ ResNet-50 约 2.5×10⁷ 参数但只有 1 个损失值，反向模式只需一�
 # ========== 高阶导数：create_graph=True ==========
 print("=== 高阶导数 ===")
 #
-# 默认情况下，grad() / backward() 的输出（梯度 tensor）不在计算图中，
-# 无法对其进一步求导。
+# 默认情况下，grad() / backward() 的输出（梯度 tensor）不在计算图中，无法对其进一步求导。
 # create_graph=True 使梯度本身也成为计算图的节点，从而允许链式调用 grad()。
 # 应用：MAML（Model-Agnostic Meta-Learning, Finn et al. NeurIPS 2017）的
 # 元梯度计算；物理模拟中的梯度惩罚；谱归一化的 Lipschitz 约束估计。
