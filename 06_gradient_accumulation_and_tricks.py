@@ -14,29 +14,26 @@ import torch.nn as nn
 # ========== 1. 梯度累加（Gradient Accumulation）==========
 #
 # 问题背景：
-#   批量大小（batch size）在理论上影响优化轨迹——大 batch 梯度估计方差低，
-#   但受限于 GPU 显存，往往无法直接设大。
+#   批量大小（batch size）在理论上影响优化轨迹——大 batch 梯度估计方差低，但受限于 GPU 显存，往往无法直接设大。
 #
 # 解决方案：
-#   将 batch_size=B 拆成 k 个 mini-batch（每个大小 B/k），
-#   累加 k 步梯度后再调用一次 optimizer.step()。
+#   将 batch_size=B 拆成 k 个 mini-batch（每个大小 B/k），累加 k 步梯度后再调用一次 optimizer.step()。
 #   效果近似等价于 batch_size=B 的单步更新。
 #
 # 严格等价条件：
 #   ① 损失函数对样本线性可分解（MSE、CE 均满足）；
-#   ② 累加期间无 Batch Normalization（BN 的统计量基于 mini-batch，
-#      k 步累加并不等价于在 B 个样本上计算 BN，会引入统计偏差）。
+#   ② 累加期间无 Batch Normalization（BN 的统计量基于 mini-batch，k 步累加并不等价于在 B 个样本上计算 BN，会引入统计偏差）。
 #
 # 延伸参考：Smith et al., "Don't Decay the Learning Rate, Increase the Batch Size"
 #           ICLR 2018——等效大 batch 训练时学习率亦应相应缩放。
 
 print("=== 梯度累加 ===")
 
-model     = nn.Linear(10, 1)
-optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+model     = nn.Linear(10, 1) # 简单线性模型，权重 shape (1, 10)
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01) # 学习率不变，验证累加效果
 
-data   = torch.randn(32, 10)
-target = torch.randn(32, 1)
+data   = torch.randn(32, 10) # 模拟 batch=32 的输入数据
+target = torch.randn(32, 1) # 对应的目标值
 
 # 对照组：完整 batch=32 的单步梯度
 optimizer.zero_grad()
