@@ -52,4 +52,4 @@ a = torch.randn(size=(), requires_grad=True)
 d = f(a)
 d.backward()
 
-a.grad == d / a
+a.grad == d / a # 链式法则：d/dx f(g(x)) = f'(g(x)) * g'(x)
