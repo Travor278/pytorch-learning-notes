@@ -21,8 +21,8 @@ trans = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.2860,), (0.3530,))
 ])
-train_set = torchvision.datasets.FashionMNIST('../data', train=True,  transform=trans, download=True)
-test_set  = torchvision.datasets.FashionMNIST('../data', train=False, transform=trans, download=True)
+train_set = torchvision.datasets.FashionMNIST('./data', train=True,  transform=trans, download=True)
+test_set  = torchvision.datasets.FashionMNIST('./data', train=False, transform=trans, download=True)
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH, shuffle=True,  num_workers=0)
 test_loader  = torch.utils.data.DataLoader(test_set,  batch_size=BATCH, shuffle=False, num_workers=0)
 

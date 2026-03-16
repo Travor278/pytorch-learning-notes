@@ -13,9 +13,9 @@ def get_fashion_mnist_labels(labels):
 def load_data_fashion_mnist(batch_size):
     """下载 Fashion-MNIST 数据集并加载到内存。"""
     trans = transforms.ToTensor()
-    mnist_train = torchvision.datasets.FashionMNIST(root="../data", train=True,
+    mnist_train = torchvision.datasets.FashionMNIST(root="./data", train=True,
                                                     transform=trans, download=True)
-    mnist_test  = torchvision.datasets.FashionMNIST(root="../data", train=False,
+    mnist_test  = torchvision.datasets.FashionMNIST(root="./data", train=False,
                                                     transform=trans, download=True)
     return (torch.utils.data.DataLoader(mnist_train, batch_size, shuffle=True,  num_workers=0),
             torch.utils.data.DataLoader(mnist_test,  batch_size, shuffle=False, num_workers=0))
