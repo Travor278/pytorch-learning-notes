@@ -99,7 +99,7 @@ class PositionalEncoding(nn.Module):
         pe[:, 1::2] = torch.cos(position * div_term)
 
         # 变成 (1, max_len, d_model)，自动 broadcast 到 batch,便于和 (batch, seq_len, d_model) 相加
-        pe = pe.unsqueeze(0)
+        pe = pe.unsqueeze(0) # 在第 dim 个位置插入一个长度为 1 的新维度
 
         # buffer 会随着模型保存，但不会参与梯度更新
         self.register_buffer("pe", pe)
