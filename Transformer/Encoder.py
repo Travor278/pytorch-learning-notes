@@ -134,7 +134,7 @@ class EncoderLayer(nn.Module):
 # %%
 class TransformerEncoder(nn.Module):
     """
-    一个按原始 Transformer 论文主干结构实现的 Encoder（Post-LN 风格）。
+    原始 Transformer 论文主干结构实现的 Encoder（Post-LN 风格）。
     """
 
     def __init__(

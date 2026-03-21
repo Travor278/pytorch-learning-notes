@@ -132,7 +132,6 @@ def make_causal_mask(seq_len: int, device: torch.device | str = "cpu") -> torch.
 
 class MultiHeadAttention(nn.Module):
     """
-    手写版多头注意力。
     输入和输出都使用 batch_first:
     (batch_size, seq_len, d_model)
     """
