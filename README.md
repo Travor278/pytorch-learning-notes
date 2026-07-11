@@ -197,6 +197,9 @@ python GPT/train_gpt.py --text-path GPT/_train_text_large.txt \
 
 #### Sampling
 
+The repository does not include pretrained weights. Train the model first or
+place a compatible checkpoint at the path passed to `--ckpt`.
+
 ```bash
 python GPT/sample.py --ckpt GPT/checkpoints/gpt_char_best.pt \
   --prompt "春风" --temperature 0.8 --top-p 0.9 --max-new-tokens 120
@@ -212,15 +215,16 @@ trainable, tunable, evaluable, and servable stack.
 
 | Path | Description |
 |------|-------------|
-| `mini_llm/model/` | Model structure: config, Dense/MoE decoder-only model, LoRA, RoPE/GQA/KV Cache |
+| `mini_llm/model/` | Model structure: presets, Dense/MoE decoder-only model, LoRA, RoPE and GQA |
 | `mini_llm/trainer/` | Training entrypoints: tokenizer, pretrain, full_sft, lora, dpo, ppo, grpo, agent, distillation |
 | `mini_llm/scripts/` | Engineering scripts: CLI chat, conversion, tool-call eval, OpenAI API serving, WebUI |
 | `mini_llm/dataset/` | Local JSONL data directory; real data is ignored, format notes are tracked |
 | `mini_llm/eval_llm.py` | Inference and evaluation entrypoint |
 
-Current status: engineering scaffold. Next priorities are
-`model/model_minimind.py`, then `trainer/train_pretrain.py` and
-`trainer/train_full_sft.py`.
+Current status: dense model training, JSONL pretraining, full SFT, native LoRA,
+checkpoint evaluation, and DPO are runnable. MoE and RL-stage infrastructure
+are in progress; KV cache and production-grade evaluation remain planned. See
+[`mini_llm/README.md`](mini_llm/README.md) for presets and commands.
 
 ---
 
@@ -232,6 +236,15 @@ Current status: engineering scaffold. Next priorities are
 - `GPT/_train_text_large.txt`: ~400k characters of classical Chinese (四书五经, 宋词, 全唐诗)
 
 Datasets, TensorBoard logs, and trained model files are excluded from git via `.gitignore`.
+
+## Repository Hygiene
+
+- Model weights and checkpoint directories are intentionally not versioned.
+- Keep reproducible configs, tokenizer code, evaluation results, and small
+  metadata files in Git; keep generated `.pt`, `.pth`, `.ckpt`,
+  `.safetensors`, and similar artifacts local or in external model storage.
+- Training scripts create their output directories as needed. A fresh clone
+  therefore contains source code and documentation, but no pretrained model.
 
 ## Requirements
 

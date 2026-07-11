@@ -1,0 +1,15 @@
+{"type":"metadata","checkpoint":"mini_llm\\checkpoints\\minimind_mini_8k_sft50k\\sft_last.pt","checkpoint_step":12000,"device":"cuda","precision":"bf16","max_new_tokens":140,"temperature":0.0,"top_k":0,"num_cases":14}
+{"type":"case","category":"identity","name":"model_identity","prompt":"你是谁？你由谁开发？","completion":"我是由jingyaogong开发的高效小参数AI模型。我专注于高效处理信息、提供精准解答，专注于高效处理任务。"}
+{"type":"case","category":"chat","name":"movie_recommendation","prompt":"你最近有没有看过什么好电影？推荐三部并简单说明。","completion":"最近看了《奥本海默》，导演用历史与人性探讨人性与历史的复杂性。推荐三部以哲学思考为背景，既有历史深度又有哲思深度。"}
+{"type":"case","category":"writing","name":"ai_short_essay","prompt":"写一篇关于人工智能对未来影响的短文，控制在150字以内。","completion":"未来将重塑社会结构，AI将重塑工作模式，医疗、教育、交通等领域带来变革。"}
+{"type":"case","category":"summary","name":"ai_governance_summary","prompt":"请摘要这段文字：人工智能正在改变医疗、教育和制造业。它可以提高效率，也会带来就业结构变化和隐私风险，因此需要技术发展与治理同步推进。","completion":"人工智能正在改变医疗、教育和制造业。它可以提高效率、降低成本、提升生活质量，并带来就业结构变化和隐私风险。技术发展与治理同步推进，需平衡技术创新与伦理规范，确保技术发展符合社会价值观。"}
+{"type":"case","category":"code","name":"word_count_function","prompt":"请写一个 Python 函数，将一段文本转换为包含单词及其出现次数的字典。","completion":"请提供需要转换的文本，我将尽力提供。"}
+{"type":"case","category":"math","name":"simple_arithmetic_en","prompt":"What is the result of 25 multiplied by 3 plus 10 divided by 2?","completion":"What is the result of 25 multiplied by 3 plus 10 divided by 2?"}
+{"type":"case","category":"classification","name":"junk_food_examples","prompt":"生成垃圾食品的类型和常见例子。","completion":"我是MiniMind，一个由jingyaogong创建的高效小参数AI模型。我的主要功能是提供精准、快速的垃圾分类、精准的分类和回收建议。我的设计目标是帮助用户更高效地获取所需物品，同时保持简洁和准确。"}
+{"type":"case","category":"llm","name":"lora_core","prompt":"请简单解释一下 LoRA 的核心思想。","completion":"LoRA 的核心思想是动态调整策略，通过动态调整策略实现动态平衡。LoRA 的动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整策略实现动态平衡。\n\nLoRA 的动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整策略实现动态平衡，动态调整策略通过动态调整"}
+{"type":"case","category":"llm","name":"attention_mqa_gqa","prompt":"MHA、MQA 和 GQA 有什么区别？","completion":"MHA、MQA 和 GQA 都是常用的加密算法，它们的功能和应用场景各有不同。MHA（加密）是基于密钥分发（QKD）的加密算法，而GQA 是基于概率的加密算法。两者在功能和应用场景上存在显著差异。\n\nMHA（加密）是基于密钥分发（QKD）的加密算法，而GQA 是基于概率的加密算法。两者在功能和应用场景上存在显著差异。\n\nMHA（加密）是基于概率的加密算法，而G"}
+{"type":"case","category":"llm","name":"moe_routing","prompt":"MoE 中 routing 是怎么工作的？","completion":"MoE 中 routing 是用于高效处理信息、提供精准解答的工具。\n\nMoE 中 routing 是用于高效处理信息的工具，支持多语言支持。\n\nMoE 中 routing 是用于高效处理信息的工具，支持多语言支持。\n\nMoE 中 routing 是用于高效处理信息的工具，支持多语言支持。\n\nMoE 中 routing 是用于高效处理信息的工具，支持多语言支持。\n\nMoE 中 routing 是用于高效处理信息的"}
+{"type":"case","category":"rag","name":"bm25","prompt":"BM25 的核心思想是什么？","completion":"BM25 的核心思想是通过高效计算和精准分析，辅助用户高效完成任务、解决问题和提升效率。"}
+{"type":"case","category":"vlm","name":"llava_structure","prompt":"LLaVA 如何把视觉特征接入大语言模型？","completion":"LLaVA 通过多层神经网络架构，结合多层神经网络架构，捕捉图像特征并生成视觉特征。核心在于卷积神经网络（CNN）和长短时记忆网络（LSTM）的组合，结合卷积神经网络（CNN）和长短时记忆网络（LSTM）的组合。"}
+{"type":"case","category":"vla","name":"vla_definition","prompt":"VLA 模型是什么？","completion":"NLA 模型由jingyaogong创建，专注于高效处理信息、提供精准解答。"}
+{"type":"case","category":"agent","name":"agent_components","prompt":"AI Agent 通常由哪些组件组成？","completion":"AI Agent 由 AI 和 MiniMind组成，专注于高效处理信息、提供精准解答和快速响应。"}

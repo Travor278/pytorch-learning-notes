@@ -197,6 +197,9 @@ python GPT/train_gpt.py --text-path GPT/_train_text_large.txt \
 
 #### 采样
 
+仓库不附带预训练权重。请先完成训练，或将兼容的 checkpoint 放到
+`--ckpt` 指定的位置。
+
 ```bash
 python GPT/sample.py --ckpt GPT/checkpoints/gpt_char_best.pt \
   --prompt "春风" --temperature 0.8 --top-p 0.9 --max-new-tokens 120
@@ -210,13 +213,13 @@ MiniMind 风格的小型 LLM 工程主线。这里不复用 `GPT/` 教学实现�
 
 | 路径 | 说明 |
 |------|------|
-| `mini_llm/model/` | 模型结构：配置、Dense/MoE decoder-only、LoRA、RoPE/GQA/KV Cache 等 |
+| `mini_llm/model/` | 模型结构：预设配置、Dense/MoE decoder-only、LoRA、RoPE 与 GQA |
 | `mini_llm/trainer/` | 训练入口：tokenizer、pretrain、full_sft、lora、dpo、ppo、grpo、agent、distillation |
 | `mini_llm/scripts/` | 工程脚本：CLI chat、模型转换、Tool Call 评测、OpenAI API 服务、WebUI |
 | `mini_llm/dataset/` | 本地 JSONL 数据目录，真实数据不提交，仅保留格式说明 |
 | `mini_llm/eval_llm.py` | 推理与评测入口 |
 
-当前是工程骨架；下一步优先填 `model/model_minimind.py` 的模型核心，再接 `trainer/train_pretrain.py` 与 `trainer/train_full_sft.py`。
+当前已跑通 Dense 模型训练、JSONL 预训练、全参数 SFT、原生 LoRA、checkpoint 评测与 DPO；MoE 和 RL 阶段基础设施仍在完善，KV Cache 与生产级评测尚待补齐。预设配置与运行命令见 [`mini_llm/README.md`](mini_llm/README.md)。
 
 ---
 
@@ -228,6 +231,15 @@ MiniMind 风格的小型 LLM 工程主线。这里不复用 `GPT/` 教学实现�
 - `GPT/_train_text_large.txt`：约 40 万字古典汉语文本（四书五经、宋词、全唐诗）
 
 数据集、TensorBoard 日志和训练生成的模型文件体积较大，已通过 `.gitignore` 排除，不会提交到 GitHub。
+
+## 仓库文件管理
+
+- 模型权重和 checkpoint 目录不纳入版本控制。
+- 可复现的配置、tokenizer 代码、评测结果和小型元数据保留在 Git 中；
+  生成的 `.pt`、`.pth`、`.ckpt`、`.safetensors` 等文件保留在本地或
+  外部模型存储中。
+- 训练脚本会按需创建输出目录，因此全新 clone 只包含源码与文档，
+  不包含预训练模型。
 
 ## 环境
 

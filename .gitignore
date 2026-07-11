@@ -1,42 +1,62 @@
-# Datasets (too large for git)
+# Datasets and downloaded corpora
 /data/
 /dataset/
 /dataset2/
 /mini_llm/dataset/*
 !/mini_llm/dataset/README.md
 
-# Saved model files
+# Model weights and training artifacts
+*.pt
 *.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.h5
+*.hdf5
+*.gguf
+pytorch_model*.bin
+checkpoints/
+_tmp_ckpt*/
 /mini_llm/out/
-/mini_llm/checkpoints/
+/mini_llm/tokenizer*.json
 
-# TensorBoard logs
+# Experiment logs and caches
 /logs/
 /dataloader/
 /p10/
 /runs/
 /xiaotudui/runs/
 events.out.tfevents.*
+wandb/
+.hf_cache/
 
-# Local agent/tool config
+# Local agent and tool configuration
 .claude/
 
-# IDE
+# Editors and notebooks
 .idea/
 .vscode/
+.ipynb_checkpoints/
 
-# Python
+# Python caches and build output
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 dist/
 build/
 *.egg
 
-# Virtual environment
+# Virtual environments and secrets
 venv/
+.venv/
 .env/
+.env
+.env.*
+!.env.example
 
 # OS
 Thumbs.db
